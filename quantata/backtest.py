@@ -45,32 +45,48 @@ def simulate(
         amount = volume * price
         fee = np.ceil(amount * fee_rate)
 
-        if signal > 0 and (unlimited or cap >= amount + fee):
-            cap -= amount + fee
-            pos += volume
-            amounts.append(amount)
-            volumes.append(volume)
-            fees.append(fee)
-            poses.append(pos)
-            caps.append(cap)
+        if signal > 0:
+            if unlimited or cap >= amount + fee:
+                cap -= amount + fee
+                pos += volume
+                amounts.append(amount)
+                volumes.append(volume)
+                fees.append(fee)
+                poses.append(pos)
+                caps.append(cap)
+                continue
 
-        elif pos >= volume and (
-            cap >= fee or amount >= fee or cap + amount >= fee
-        ):
-            cap += amount - fee
-            pos -= volume
-            amounts.append(-amount)
-            volumes.append(-volume)
-            fees.append(fee)
-            poses.append(pos)
-            caps.append(cap)
+        elif pos >= volume:
+            if cap >= fee or amount >= fee or cap + amount >= fee:
+                cap += amount - fee
+                pos -= volume
+                amounts.append(-amount)
+                volumes.append(-volume)
+                fees.append(fee)
+                poses.append(pos)
+                caps.append(cap)
+                continue
 
         else:
-            amounts.append(0)
-            volumes.append(0)
-            fees.append(0)
-            poses.append(pos)
-            caps.append(cap)
+            volume = pos
+            amount = volume * price
+            fee = np.ceil(amount * fee_rate)
+
+            if cap >= fee or amount >= fee or cap + amount >= fee:
+                cap += amount - fee
+                pos -= volume
+                amounts.append(-amount)
+                volumes.append(-volume)
+                fees.append(fee)
+                poses.append(pos)
+                caps.append(cap)
+                continue
+
+        amounts.append(0)
+        volumes.append(0)
+        fees.append(0)
+        poses.append(pos)
+        caps.append(cap)
 
     return (
         np.array(amounts),
