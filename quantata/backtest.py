@@ -15,21 +15,21 @@ def calc_signal(
     sell_intensity = sell_weight * trade_unit / np.std(ratios)
 
     for ratio in ratios:
+        signal = 0
+
         if buy_at_high_ratio:
             if ratio >= buy_th:
-                volume = np.floor((ratio - buy_th) * buy_intensity)
-                signals.append(volume)
+                signal = np.floor((ratio - buy_th) * buy_intensity)
             elif ratio < sell_th:
-                volume = np.floor((sell_th - ratio) * sell_intensity)
-                signals.append(-volume)
+                signal = -np.floor((sell_th - ratio) * sell_intensity)
 
         else:
             if ratio <= buy_th:
-                volume = np.floor((buy_th - ratio) * buy_intensity)
-                signals.append(volume)
+                signal = np.floor((buy_th - ratio) * buy_intensity)
             elif ratio > sell_th:
-                volume = np.floor((ratio - sell_th) * sell_intensity)
-                signals.append(-volume)
+                signal = -np.floor((ratio - sell_th) * sell_intensity)
+
+        signals.append(signal)
 
     return np.array(signals, np.int64)
 
@@ -102,4 +102,7 @@ def calc_asset(prices, poses, caps):
 
 
 def calc_return(caps):
-    return (caps[-1] - caps[0]) / caps[0]
+    if caps[0]:
+        return (caps[-1] - caps[0]) / caps[0]
+    else:
+        return 0.0
