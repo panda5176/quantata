@@ -75,3 +75,8 @@ def calc_rsi(prices, window=14):
     rsis[:window] = 50.0
 
     return aus, ads, rsis
+
+
+def calc_envelope(prices, window=20, spread=0.1, use_ema=False):
+    mas = calc_ma(prices, window) if not use_ema else calc_ema(prices, window)
+    return mas * (1 + spread), mas * (1 - spread)
