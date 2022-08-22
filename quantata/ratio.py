@@ -80,3 +80,19 @@ def calc_rsi(prices, window=14):
 def calc_envelope(prices, window=20, spread=0.1, use_ema=False):
     mas = calc_ma(prices, window) if not use_ema else calc_ema(prices, window)
     return mas * (1 + spread), mas * (1 - spread)
+
+
+def calc_mov_std(prices, window=20):
+    mov_stds = list()
+    for day, _ in enumerate(prices):
+        if day < window - 1:
+            mov_stds.append(0.0)
+        else:
+            mov_stds.append(np.std(prices[day - window + 1 : day + 1]))
+    return np.array(mov_stds)
+
+
+def calc_bollinger(prices, window=20, std_unit=2, use_ema=False):
+    mov_stds = calc_mov_std(prices, window)
+    mas = calc_ma(prices, window) if not use_ema else calc_ema(prices, window)
+    return mas + std_unit * mov_stds, mas - std_unit * mov_stds

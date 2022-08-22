@@ -8,12 +8,11 @@ def calc_signal(
     sell_thresholds,
     buy_weight=1,
     sell_weight=10,
-    trade_unit=10,
     buy_at_high_ratio=True,
 ):
     signals = list()
-    buy_intensity = buy_weight * trade_unit / np.std(ratios)
-    sell_intensity = sell_weight * trade_unit / np.std(ratios)
+    buy_intensity = buy_weight / np.std(ratios)
+    sell_intensity = sell_weight / np.std(ratios)
 
     for day, ratio in enumerate(ratios):
         if isinstance(buy_thresholds, (np.ndarray, pd.Series)):
@@ -28,27 +27,29 @@ def calc_signal(
         signal = 0
         if buy_at_high_ratio:
             if ratio >= buy_th:
-                signal = np.floor((ratio - buy_th) * buy_intensity)
+                signal = (ratio - buy_th) * buy_intensity
             elif ratio < sell_th:
-                signal = -np.floor((sell_th - ratio) * sell_intensity)
+                signal = -(sell_th - ratio) * sell_intensity
 
         else:
             if ratio <= buy_th:
-                signal = np.floor((buy_th - ratio) * buy_intensity)
+                signal = (buy_th - ratio) * buy_intensity
             elif ratio > sell_th:
-                signal = -np.floor((ratio - sell_th) * sell_intensity)
+                signal = -(ratio - sell_th) * sell_intensity
 
         signals.append(signal)
 
-    return np.array(signals, np.int64)
+    return np.array(signals)
 
 
-def simulate(prices, signals, init_cap=0, init_pos=0, fee_rate=0.001):
+def simulate(
+    prices, signals, trade_unit, init_cap=0, init_pos=0, fee_rate=0.001
+):
     amounts, volumes, fees, poses, caps = list(), list(), list(), list(), list()
     pos, cap = init_pos, init_cap
 
     for price, signal in zip(prices, signals):
-        volume = abs(signal)
+        volume = abs(np.ceil(signal * trade_unit))
         amount = volume * price
         fee = np.ceil(amount * fee_rate)
 
