@@ -96,3 +96,25 @@ def calc_bollinger(prices, window=20, std_unit=2, use_ema=False):
     mov_stds = calc_mov_std(prices, window)
     mas = calc_ma(prices, window) if not use_ema else calc_ema(prices, window)
     return mas + std_unit * mov_stds, mas - std_unit * mov_stds
+
+
+def calc_stochastic(prices, window=14):
+    stochastics = list()
+    for day, price in enumerate(prices):
+        if day < window - 1:
+            stochastics.append(50.0)
+        else:
+            max_price = max(prices[day - window + 1 : day + 1])
+            min_price = min(prices[day - window + 1 : day + 1])
+            stochastics.append(
+                (price - min_price) / (max_price - min_price) * 100
+            )
+    return stochastics
+
+
+def calc_stochastic_slow(prices, window=14, period_m=3, period_t=3):
+    stochastics = calc_stochastic(prices, window)
+    slow_ks = calc_ma(stochastics, period_m)
+    slow_ds = calc_ma(slow_ks, period_t)
+    return slow_ks, slow_ds
+
