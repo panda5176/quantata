@@ -3,16 +3,10 @@ import pandas as pd
 
 
 def calc_signal(
-    ratios,
-    buy_thresholds,
-    sell_thresholds,
-    buy_weight=1,
-    sell_weight=10,
-    buy_at_high_ratio=True,
+    ratios, buy_thresholds, sell_thresholds, buy_at_high_ratio=True
 ):
     signals = list()
-    buy_intensity = buy_weight / np.std(ratios)
-    sell_intensity = sell_weight / np.std(ratios)
+    normalizer = np.std(ratios)
 
     for day, ratio in enumerate(ratios):
         if isinstance(buy_thresholds, (np.ndarray, pd.Series)):
@@ -27,15 +21,15 @@ def calc_signal(
         signal = 0
         if buy_at_high_ratio:
             if ratio >= buy_th:
-                signal = (ratio - buy_th) * buy_intensity
+                signal = (ratio - buy_th) / normalizer
             elif ratio < sell_th:
-                signal = -(sell_th - ratio) * sell_intensity
+                signal = -(sell_th - ratio) / normalizer
 
         else:
             if ratio <= buy_th:
-                signal = (buy_th - ratio) * buy_intensity
+                signal = (buy_th - ratio) / normalizer
             elif ratio > sell_th:
-                signal = -(ratio - sell_th) * sell_intensity
+                signal = -(ratio - sell_th) / normalizer
 
         signals.append(signal)
 
@@ -43,10 +37,13 @@ def calc_signal(
 
 
 def simulate(
-    prices, signals, trade_unit, init_cap=0, init_pos=0, fee_rate=0.001
+    prices, signals, init_cap=0, trade_unit=0, init_pos=0, fee_rate=0.001
 ):
     amounts, volumes, fees, poses, caps = list(), list(), list(), list(), list()
     pos, cap = init_pos, init_cap
+
+    if not trade_unit:
+        trade_unit = np.ceil(init_cap / np.mean(prices)) if init_cap else 1
 
     for price, signal in zip(prices, signals):
         volume = abs(np.ceil(signal * trade_unit))
@@ -54,47 +51,38 @@ def simulate(
         fee = np.ceil(amount * fee_rate)
 
         if signal > 0:
-            if init_cap or cap >= amount + fee:
-                cap -= amount + fee
-                pos += volume
-                amounts.append(amount)
-                volumes.append(volume)
-                fees.append(fee)
-                poses.append(pos)
-                caps.append(cap)
-                continue
+            if init_cap and cap < amount + fee:
+                for unit in range(int(volume)):
+                    volume = unit
+                    amount = volume * price
+                    fee = np.ceil(amount * fee_rate)
+                    if cap < amount + fee:
+                        volume = unit - 1
+                        amount = volume * price
+                        fee = np.ceil(amount * fee_rate)
+                        break
 
-        elif pos >= volume:
-            if cap >= fee or amount >= fee or cap + amount >= fee:
-                cap += amount - fee
-                pos -= volume
-                amounts.append(-amount)
-                volumes.append(-volume)
-                fees.append(fee)
-                poses.append(pos)
-                caps.append(cap)
-                continue
+            cap -= amount + fee
+            pos += volume
+            amounts.append(amount)
+            volumes.append(volume)
+            fees.append(fee)
+            poses.append(pos)
+            caps.append(cap)
 
         else:
-            volume = pos
-            amount = volume * price
-            fee = np.ceil(amount * fee_rate)
+            if pos < volume:
+                volume = pos
+                amount = volume * price
+                fee = np.ceil(amount * fee_rate)
 
-            if cap >= fee or amount >= fee or cap + amount >= fee:
-                cap += amount - fee
-                pos -= volume
-                amounts.append(-amount)
-                volumes.append(-volume)
-                fees.append(fee)
-                poses.append(pos)
-                caps.append(cap)
-                continue
-
-        amounts.append(0)
-        volumes.append(0)
-        fees.append(0)
-        poses.append(pos)
-        caps.append(cap)
+            cap += amount - fee
+            pos -= volume
+            amounts.append(-amount)
+            volumes.append(-volume)
+            fees.append(fee)
+            poses.append(pos)
+            caps.append(cap)
 
     return (
         np.array(amounts),
