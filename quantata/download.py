@@ -20,6 +20,10 @@ from tqdm import tqdm
 # https://www.nasdaq.com/market-activity/stocks/screener
 df = pd.read_csv("data/nasdaq_screener_1661518383831.csv")
 for symbol in tqdm(df.Symbol[:3]):
-    new_df = yf.Ticker(symbol).quarterly_financials
-    new_df.to_csv(f"data/{symbol}.tsv", sep="\t")
+    # TODO: needed values only, not whole sheets
 
+    new_df = yf.Ticker(symbol).quarterly_financials
+    new_df.to_csv(f"data/{symbol}.financials.tsv", sep="\t")
+
+    new_df = yf.Ticker(symbol).quarterly_balancesheet
+    new_df.to_csv(f"data/{symbol}.balancesheet.tsv", sep="\t")
