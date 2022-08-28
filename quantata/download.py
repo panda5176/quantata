@@ -88,7 +88,7 @@ with open(f"data/{time}.tsv", "w") as writer:
         print(f"\n{symbol} try")
         ticker = yf.Ticker(symbol)
 
-        for quarter in range(3):
+        for quarter in range(len(ticker.quarterly_financials.columns) - 1):
             closing_day_raw = ticker.quarterly_financials.columns[quarter]
             closing_day_before_1q_raw = ticker.quarterly_financials.columns[
                 quarter + 1
