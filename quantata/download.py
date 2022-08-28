@@ -94,16 +94,19 @@ with open(f"data/{time}.tsv", "w") as writer:
                 quarter + 1
             ]
 
-            if not (
-                today
-                >= closing_day_raw
-                > closing_day_before_1q_raw
-                >= today - timedelta(365)
-            ) or not (
-                closing_day_raw
-                > closing_day_before_1q_raw
-                >= closing_day_raw - timedelta(120)
-            ):
+            try:
+                if not (
+                    today
+                    >= closing_day_raw
+                    > closing_day_before_1q_raw
+                    >= today - timedelta(365)
+                ) or not (
+                    closing_day_raw
+                    > closing_day_before_1q_raw
+                    >= closing_day_raw - timedelta(120)
+                ):
+                    continue
+            except TypeError:
                 continue
 
             closing_day = closing_day_raw.strftime("%Y-%m-%d")
