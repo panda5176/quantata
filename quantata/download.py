@@ -250,7 +250,7 @@ with open(f"data/{time}.tsv", "w") as writer:
                     share_price - share_price_before_1q
                 ) / share_price_before_1q
 
-            except (ZeroDivisionError, TypeError, IndexError):
+            except (ZeroDivisionError, TypeError, IndexError, KeyError):
                 continue
 
             row = [
@@ -310,4 +310,3 @@ with open(f"data/{time}.tsv", "w") as writer:
             ]
             writer.write("\t".join(list(map(str, row))) + "\n")
             print(f"\n{symbol} {quarter+1}Q done")
-
