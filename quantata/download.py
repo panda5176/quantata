@@ -32,9 +32,9 @@ with open(f"data/{time}.tsv", "w") as writer:
         "ClosingDay",
         "NextDay",
         "SharePrice",
-        "ClosingDayBefore1Q",
-        "NextDayBefore1Q",
-        "SharePriceBefore1Q",
+        "ClosingDayAfter1Q",
+        "NextDayAfter1Q",
+        "SharePriceAfter1Q",
         "ShareCount",
         "MarketCapital",
         "NetWorth",
@@ -88,22 +88,25 @@ with open(f"data/{time}.tsv", "w") as writer:
         print(f"\n{symbol} try")
         ticker = yf.Ticker(symbol)
 
-        for quarter in range(len(ticker.quarterly_financials.columns) - 1):
+        if len(ticker.quarterly_financials.columns) < 2:
+            continue
+
+        for quarter in range(1, len(ticker.quarterly_financials.columns)):
             closing_day_raw = ticker.quarterly_financials.columns[quarter]
-            closing_day_before_1q_raw = ticker.quarterly_financials.columns[
-                quarter + 1
+            closing_day_after_1q_raw = ticker.quarterly_financials.columns[
+                quarter - 1
             ]
 
             try:
                 if not (
                     today
-                    >= closing_day_raw
-                    > closing_day_before_1q_raw
+                    >= closing_day_after_1q_raw
+                    > closing_day_raw
                     >= today - timedelta(365)
                 ) or not (
-                    closing_day_raw
-                    > closing_day_before_1q_raw
-                    >= closing_day_raw - timedelta(120)
+                    closing_day_raw + timedelta(120)
+                    >= closing_day_after_1q_raw
+                    > closing_day_raw
                 ):
                     continue
             except TypeError:
@@ -130,17 +133,15 @@ with open(f"data/{time}.tsv", "w") as writer:
             if no_history:
                 continue
 
-            closing_day_before_1q = closing_day_before_1q_raw.strftime(
-                "%Y-%m-%d"
-            )
+            closing_day_after_1q = closing_day_after_1q_raw.strftime("%Y-%m-%d")
             date_offset, no_history_count, no_history = 1, 0, False
             while True:
-                next_day_before_1q = (
-                    closing_day_before_1q_raw + pd.DateOffset(date_offset)
+                next_day_after_1q = (
+                    closing_day_after_1q_raw + pd.DateOffset(date_offset)
                 ).strftime("%Y-%m-%d")
                 try:
-                    share_price_before_1q = ticker.history(
-                        start=closing_day_before_1q, end=next_day_before_1q
+                    share_price_after_1q = ticker.history(
+                        start=closing_day_after_1q, end=next_day_after_1q
                     ).Close[0]
                     break
                 except IndexError:
@@ -247,8 +248,8 @@ with open(f"data/{time}.tsv", "w") as writer:
                 ) / total_assets_before_1y
 
                 share_price_growth = (
-                    share_price - share_price_before_1q
-                ) / share_price_before_1q
+                    share_price_after_1q - share_price
+                ) / share_price
 
             except (ZeroDivisionError, TypeError, IndexError, KeyError):
                 continue
@@ -258,9 +259,9 @@ with open(f"data/{time}.tsv", "w") as writer:
                 closing_day,
                 next_day,
                 share_price,
-                closing_day_before_1q,
-                next_day_before_1q,
-                share_price_before_1q,
+                closing_day_after_1q,
+                next_day_after_1q,
+                share_price_after_1q,
                 share_count,
                 market_capital,
                 net_worth,
